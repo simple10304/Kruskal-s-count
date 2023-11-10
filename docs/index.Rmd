@@ -1,0 +1,171 @@
+---
+title: "DAhw_1"
+author: "Lin,Pei Chen"
+date: "2023-02-21"
+output: html_document
+--
+Q.11
+```{r}
+library(ggplot2)
+library(cowplot)
+library(showtext)
+```
+create dice function
+```{r}
+dice<-function(x){
+  z <- replicate(1000, mean(sample(1:6,x, replace = TRUE)))
+  return(z)
+}
+```
+simulate the number of dice for 1000 times
+```{r}
+twodice<-dice(2)
+threedice<-dice(3)
+fourdice<-dice(4)
+fivedice<-dice(5)
+```
+plot the four histograms 
+```{r}
+plot.two<-ggplot(data.frame(x = twodice), aes(x)) +
+  geom_histogram(bins = 25, fill = "skyblue4", alpha = 0.5) +
+  labs(title = "2 Dice") +
+  xlab("Num") +
+  ylab("Prob")+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6),labels = c("1","2","3","4","5","6"))+
+  scale_y_continuous(labels = scales::number_format(scale= 0.001))+
+  theme(plot.title=element_text(hjust = 0.5,face="bold"))
+
+plot.three<-ggplot(data.frame(x = threedice), aes(x)) +
+  geom_histogram(bins = 50, fill = "skyblue4", alpha = 0.5) +
+  labs(title = "3 Dice") +
+  xlab("Num") +
+  ylab("Prob")+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6),labels = c("1","2","3","4","5","6"))+
+  scale_y_continuous(labels = scales::number_format(scale= 0.001))+
+  theme(plot.title=element_text(hjust = 0.5,face="bold"))
+
+plot.four<-ggplot(data.frame(x = fourdice), aes(x)) +
+  geom_histogram(bins = 100, fill = "skyblue4", alpha = 0.5) +
+  labs(title = "4 Dice") +
+  xlab("Num") +
+  ylab("Prob")+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6),labels = c("1","2","3","4","5","6"))+
+  scale_y_continuous(labels = scales::number_format(scale= 0.001))+
+  theme(plot.title=element_text(hjust = 0.5,face="bold"))
+
+plot.five<-ggplot(data.frame(x = fivedice), aes(x)) +
+  geom_histogram(bins = 150, fill = "skyblue4", alpha = 0.5) +
+  labs(title = "5 Dice") +
+  xlab("Num") +
+  ylab("Prob")+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6),labels = c("1","2","3","4","5","6"))+
+  scale_y_continuous(labels = scales::number_format(scale= 0.001))+
+  theme(plot.title=element_text(hjust = 0.5,face="bold"))
+
+plot<-ggdraw()+
+  draw_plot(plot.two,0,0.5,0.5,0.5)+
+  draw_plot(plot.four,0,0,0.5,0.5)+
+  draw_plot(plot.three,0.5,0.5,0.5,0.5)+
+  draw_plot(plot.five,0.5,0,0.5,0.5)
+print(plot)
+```
+
+Q.12
+```{r}
+library(ggplot2)
+```
+create pokercard function
+```{r}
+pokercard<-function(x){
+  z<-data.frame(face=rep(c(2:10,"J","Q","K","A"),4*x),hs=rep(c("Spades","Diamonds","Hearts","Clubs"),each=13)) 
+  return(z)
+}
+```
+shuffle function
+```{r}
+shuffle<-function(){
+  copypkp<-pkp 
+  random<-sample(c(1:nrow(pkp)),size=nrow(pkp)) 
+  for (i in 1:nrow(pkp)) { 
+    assign("copypkp",copypkp[random,],envir = globalenv()) 
+  }
+}
+```
+set x for the deck of cards and y for the number of steps for face cards 
+```{r}
+Game<-function(x,y){
+  pkp<<-pokercard(x)
+  copypkp<<-pkp 
+  #licensing card
+  assign("copypkp",copypkp[-1,],envir = globalenv())
+  #paly 10000 times
+  #calculate the numbers of the first 10 cards reach the same card
+  Card_prob<-0
+  for(a in 1:10000){
+    shuffle()
+    Card_data<-c()
+    #pick a card in first 10 cards
+    for(z in 1:10){
+      card<-copypkp[z,]
+      new_index<- which(rownames(copypkp)==rownames(card))
+      row_index<-new_index
+      #go to the next card
+      for(i in 2:52*x){
+        if (row_index<=new_index){
+          for(j in 2:10){
+            if(card$face=="A"){
+              new_index<-row_index+1
+              break
+            }else if(card$face=="J"){
+              new_index<-row_index+y
+              break
+            }else if(card$face=="Q"){
+              new_index<-row_index+y
+              break
+            }else if(card$face=="K"){
+              new_index<-row_index+y
+              break
+            }else if (as.numeric(card$face)==j){
+              new_index<-row_index+j
+              break
+            }
+          }
+          if(new_index>52*x){
+            break
+          }
+          else{
+            row_index<-new_index
+            card<-copypkp[row_index,]
+          }
+        }
+      }
+      Card_data<-c(Card_data,row_index)
+    }
+    num<-table(Card_data)
+    ifelse(num/10==1,Card_prob<-Card_prob+1,Card_prob)
+  }
+  return(Card_prob/10000)
+}
+```
+save the results for each different parameter
+```{r}
+result_df<-data.frame(x=numeric(),y=numeric(),result=numeric())
+for(i in 1:2){
+  for(j in seq(from=1,to=9,by=2)){
+    x<-i
+    y<-j
+    result<-Game(i,j)
+    result_df<-rbind(result_df,data.frame(x=x,y=y,result=result))
+  }
+}
+print(result_df)
+
+```
+From the above result,we can find out that the larger number of steps comes with a higher probability.If we use two decks to simulate the game,we can find out the same pattern but with a higher probability.
+```{r}
+ggplot(result_df, aes(x = paste(x, y, sep = ","), y = result,fill=factor(x))) +
+  geom_col() +
+  labs(x = "deck of cards,# of steps for face cards", y = "Probability")+
+  scale_fill_manual(values=c("cadetblue","navajowhite4"))
+```
+
